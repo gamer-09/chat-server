@@ -75,11 +75,31 @@ app.post('/scan/start', requireAuth, async (req, res) => {
       return res.status(400).json({ ok: false, error: 'owner and non-empty repos[] required' });
     }
     const job = scanManager.create({ owner, repos, ghToken, maxBytesPerFile, includePatterns, excludePatterns });
-    // Log job events to server console for debugging
-    ['start','repo','count','file','finding','progress','warn','error','end'].forEach(ev => {
-      job.on(ev, (data) => {
-        try { console.log(`JOB ${job.id} ${ev}:`, typeof data === 'string' ? data : JSON.stringify(data)); } catch (e) { console.log(`JOB ${job.id} ${ev}:`, data); }
-      });
+    // Attach structured logger for job events (redacts sensitive findings)
+    const { createLogger, redactFinding } = require('./logger');
+    const jobLogger = createLogger('repo_scan_job');
+    const handlers = {};
+    ['start','repo','count','file','finding','progress','warn','error','end'].forEach((ev) => {
+      handlers[ev] = (data) => {
+        try {
+          if (ev === 'finding') {
+            jobLogger.info('finding', { jobId: job.id, finding: redactFinding(data) });
+          } else if (ev === 'end') {
+            const meta = data && data.findings ? { findings: (data.findings || []).slice(0, 20).map(redactFinding) } : undefined;
+            jobLogger.info('end', { jobId: job.id, ...meta });
+            // cleanup listeners
+            for (const k of Object.keys(handlers)) job.off(k, handlers[k]);
+          } else if (ev === 'warn' || ev === 'error') {
+            jobLogger.warn(ev, { jobId: job.id, ...(data || {}) });
+          } else {
+            // generic info events: start, repo, count, file, progress
+            jobLogger.info(ev, { jobId: job.id, ...(data || {}) });
+          }
+        } catch (e) {
+          try { console.error('Logger failure', e); } catch {}
+        }
+      };
+      job.on(ev, handlers[ev]);
     });
     res.json({ ok: true, jobId: job.id });
   } catch (e) {
