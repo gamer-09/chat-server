@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ptr_29 Chat</title>
+  <link rel="icon" href="data:,">
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;height:100vh;line-height:1.3;font-size:10px}
+    header{padding:12px 16px;background:#111827;border-bottom:1px solid #1f2937}
+    main{display:flex;flex:1;overflow:hidden}
+    #sidebar{width:clamp(150px,15vw,200px);background:#0b1220;border-right:1px solid #1f2937;display:flex;flex-direction:column}
+    #rooms-header{display:flex;justify-content:space-between;align-items:center;padding:5px;border-bottom:1px solid #1f2937}
+    #room-list{flex:1;overflow-y:auto;padding:1px}
+    .room{display:flex;align-items:center;gap:2px;padding:2px 4px;border-radius:3px;border:1px solid transparent;cursor:pointer}
+    .room:hover{background:#0f172a;border-color:#1f2937}
+    .room.active{background:#111827;border-color:#334155}
+    #chat{flex:1;display:flex;flex-direction:column}
+    #room-bar{display:flex;align-items:center;justify-content:space-between;padding:3px 6px;border-bottom:1px solid #1f2937;background:#0b1220}
+    #messages{flex:1;display:flex;flex-direction:column;padding:14px 16px;gap:9px;overflow-y:auto}
+    #typing{min-height:18px;color:#93c5fd;font-size:13px;opacity:.9;padding:0 12px}
+    .sys{color:#93c5fd;font-size:8px;opacity:.85;margin:1px 0}
+    .msg{background:#111827;border:1px solid #1f2937;border-radius:6px;padding:12px 16px}
+    .meta{display:flex;align-items:center;gap:8px;font-size:13px;color:#9ca3af;margin-bottom:5px}
+    .meta span:nth-of-type(1){font-weight:600;color:#e5e7eb}
+    .meta span:nth-of-type(2){color:#9aa4b2}
+    .avatar{width:20px;height:20px;border-radius:50%;border:1px solid #1f2937;object-fit:cover;background:#0b1220}
+    .receipts{margin-top:5px;font-size:12px;color:#7a8594}
+    .body{line-height:1.46;overflow-wrap:anywhere;font-size:15px}
+    form{display:flex;gap:2px;padding:4px;border-top:1px solid #1f2937;background:#0b1220;flex-wrap:wrap}
+    input,button{font:inherit}
+    #username{width:150px}
+    #avatar{width:clamp(180px,26vw,360px)}
+    #text{flex:1;min-width:160px}
+    button{background:#2563eb;color:white;border:0;border-radius:2px;padding:2px 6px;cursor:pointer;font-size:.78em}
+    button.secondary{background:#1f2937;color:#e2e8f0}
+    button.danger{background:#dc2626;color:white}
+    button.danger:hover{background:#b91c1c}
+    button:disabled{opacity:.6;cursor:not-allowed}
+
+    /* Responsive adjustments */
+    @media (max-width: 1024px) {
+      #sidebar{width:clamp(200px,26vw,300px)}
+    }
+    @media (max-width: 768px) {
+      main{flex-direction:column}
+      #sidebar{width:100%;height:40vh;border-right:none;border-bottom:1px solid #1f2937}
+      #chat{flex:1;min-height:0}
+      #room-bar{position:sticky;top:0;z-index:2}
+      #avatar{width:100%}
+      #username{width:100%}
+      #text{flex-basis:100%}
+    }
+    @media (max-width: 480px) {
+      header{padding:10px}
+      #messages{padding:10px}
+      .msg{padding:8px 10px}
+      .meta{font-size:11px}
+      #typing{font-size:11px;padding:0 10px}
+      #sidebar{height:36vh}
+      #rooms-header{padding:10px}
+      #room-list{padding:6px}
+      .room{padding:6px 8px}
+    }
+
+    :root{--bg:#0f172a;--panel:#0b1220;--panel2:#111827;--border:#1f2937;--accent:#2563eb;--accent2:#7c3aed;--text:#e2e8f0;--muted:#9ca3af}
+    header{background:linear-gradient(135deg,var(--panel2),var(--panel) 60%,var(--bg))}
+    main{max-width:1200px;margin:0 auto;width:100%}
+    #messages{background:
+      radial-gradient(1200px 60% at 100% 0%, rgba(37,99,235,0.06), transparent 60%),
+      radial-gradient(900px 50% at 0% 100%, rgba(124,58,237,0.05), transparent 60%)}
+
+    .msg{max-width:min(720px,94%);align-self:flex-start;border-color:#233044;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+    .msg.me{align-self:flex-end;background:linear-gradient(135deg, rgba(37,99,235,0.22), rgba(124,58,237,0.18));border-color:#2b3b6b}
+    .meta{color:#9aa4b2}
+    .receipts{color:#7a8594}
+    .actions{display:none !important}
+    .msg img.msg-image{display:block;max-width:160px;max-height:160px;height:auto;border-radius:5px;border:1px solid #1f2937;background:#0b1220;object-fit:contain;cursor:zoom-in}
+
+    /* Context menu */
+    .context-menu{position:fixed;z-index:9999;display:none;background:#0b1220;border:1px solid #1f2937;border-radius:8px;min-width:180px;box-shadow:0 12px 28px rgba(0,0,0,.35);padding:6px}
+    .context-menu button{width:100%;text-align:left;background:transparent;color:#e2e8f0;border:0;padding:8px 10px;border-radius:6px}
+    .context-menu button:hover{background:#111827}
+    .context-menu button:disabled{opacity:.6;cursor:not-allowed}
+
+    /* Reply block and preview */
+    .reply{background:#0b1220;border:1px solid #1f2937;border-radius:5px;padding:5px 7px;margin-bottom:5px;cursor:pointer;font-size:13px}
+    .reply .user{font-weight:600;color:#e5e7eb;margin-right:6px}
+    .reply .excerpt{color:#9aa3af}
+    #reply-preview{display:none;background:#0b1220;border-top:1px solid #1f2937;border-bottom:1px solid #1f2937;padding:4px 8px;align-items:center;gap:6px}
+    #reply-preview .close{margin-left:auto;background:#1f2937;border:0;color:#e2e8f0;border-radius:3px;padding:2px 6px;cursor:pointer}
+
+    /* Lightbox */
+    .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;z-index:99999}
+    .lightbox.open{display:flex}
+    .lightbox img{max-width:min(92vw,1200px);max-height:92vh;border-radius:10px;box-shadow:0 20px 50px rgba(0,0,0,.6);cursor:zoom-out;border:1px solid rgba(255,255,255,.1);background:#0b1220}
+
+    input{background:#0f172a;color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 7px;outline:none}
+    input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,0.25)}
+    select{background:#0f172a;color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 6px;outline:none}
+    select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,0.25)}
+    button{transition:background-color .2s, transform .05s ease}
+    button:hover{background:#1f56d1}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:#172032}
+    button.secondary:hover{background:#1b263b}
+
+    .room{transition:background-color .2s,border-color .2s}
+    .room.active{border-left:2px solid var(--accent); padding-left:4px}
+    .room > span:last-child{background:#111827;border:1px solid #1f2937;border-radius:9999px;padding:0 4px;line-height:12px;font-size:8px}
+
+    /* Scrollbars */
+    *::-webkit-scrollbar{width:10px;height:10px}
+    *::-webkit-scrollbar-thumb{background:#243247;border-radius:8px;border:2px solid #0b1220}
+    *::-webkit-scrollbar-track{background:#0b1220}
+  </style>
+</head>
+<body>
+  <header>ptr_29 Chat</header>
+  <main>
+    <aside id="sidebar">
+      <div id="rooms-header">
+        <strong>Rooms</strong>
+        <div style="display:flex; gap:4px">
+          <button id="open-create-room" class="secondary" title="Create room">New</button>
+          <button id="refresh-rooms" class="secondary" title="Refresh rooms">↻</button>
+        </div>
+      </div>
+      <div id="room-list"></div>
+      <div id="join-by-passkey" style="display:flex;gap:4px;padding:6px;border-top:1px solid #1f2937;align-items:center;flex-wrap:wrap">
+        <input id="passkey-join-input" type="text" placeholder="Enter passkey to join..." style="flex:1">
+        <button id="passkey-join-btn" type="button" class="secondary">Join</button>
+      </div>
+
+      <details id="room-options" style="padding:0 8px 8px 8px;border-top:1px solid #1f2937">
+        <summary style="cursor:pointer;padding:6px 0;color:#e2e8f0">Room options (admins & members)</summary>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <button id="load-users" type="button" class="secondary" title="Load known users">Load users</button>
+            <span style="font-size:12px;color:#9ca3af">Choose users by clientId</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div style="flex:1;min-width:170px">
+              <div style="font-size:11px;color:#9ca3af;margin:3px 0">Admins</div>
+              <select id="new-room-admins" multiple size="6" style="width:100%"></select>
+            </div>
+            <div style="flex:1;min-width:170px">
+              <div style="font-size:11px;color:#9ca3af;margin:3px 0">Members</div>
+              <select id="new-room-members" multiple size="6" style="width:100%"></select>
+            </div>
+          </div>
+          <div id="available-users" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+        </div>
+      </details>
+    </aside>
+    <section id="chat">
+      <div id="room-bar">
+        <div>Room: <strong>#<span id="room-name">general</span></strong></div>
+        <div>
+          <button id="room-settings-btn" class="secondary" title="Room settings">Settings</button>
+          <button id="clear" class="secondary" title="Clear room messages">Clear</button>
+          <button id="delete-room" class="danger" title="Delete this room">Delete</button>
+          <button id="leave" class="secondary">Leave</button>
+        </div>
+      </div>
+      <div id="presence-bar" style="padding:6px 8px;border-bottom:1px solid #1f2937;background:#0b1220;font-size:11px;color:#9aa3af;display:flex;gap:6px;flex-wrap:wrap"></div>
+      <div id="room-settings-panel" style="display:none;border-bottom:1px solid #1f2937;background:#0b1220;padding:8px 10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <strong>Room settings</strong>
+          <button id="room-settings-close" class="secondary" type="button">Close</button>
+        </div>
+        <div id="room-meta-view" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+          <div><div style="font-size:11px;color:#9ca3af">Owner</div><div id="room-owner" style="font-family:monospace"></div></div>
+          <div id="room-admins-view" style="display:flex;flex-direction:column;gap:4px">
+            <div style="font-size:11px;color:#9ca3af">Admins</div>
+            <div id="room-admins-list" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+          </div>
+          <div id="room-members-view" style="display:flex;flex-direction:column;gap:4px">
+            <div style="font-size:11px;color:#9ca3af">Members</div>
+            <div id="room-members-list" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+          </div>
+        </div>
+        <div id="passkey-row" style="display:flex;gap:6px;align-items:center;margin:6px 0 10px 0;flex-wrap:wrap">
+          <div style="font-size:11px;color:#9ca3af;min-width:56px">Passkey</div>
+          <input id="settings-passkey" type="text" placeholder="Not set" style="flex:1;max-width:200px">
+          <button id="copy-passkey" type="button" class="secondary">Copy</button>
+          <button id="generate-passkey" type="button">Generate</button>
+          <button id="set-passkey" type="button">Save</button>
+          <button id="clear-passkey" type="button" class="danger">Clear</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              <div style="font-size:11px;color:#9ca3af">Admins</div>
+              <button id="load-users-settings" type="button" class="secondary" title="Load known users">Load users</button>
+            </div>
+            <div id="settings-admins-selected" style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0"></div>
+            <select id="settings-admins" multiple size="6" style="width:100%"></select>
+            <div style="margin-top:6px"><button id="update-admins" type="button">Update Admins</button></div>
+          </div>
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:4px">Members</div>
+            <select id="settings-members" multiple size="6" style="width:100%"></select>
+            <div style="margin-top:6px"><button id="update-members" type="button">Update Members</button></div>
+          </div>
+        </div>
+      </div>
+      <div id="messages"></div>
+      <div id="typing"></div>
+    </section>
+  </main>
+  <div id="reply-preview"><span class="label">Replying to</span><span class="who" style="font-weight:600"></span><span class="preview" style="color:#9ca3af"></span><button type="button" class="close">×</button></div>
+  <form id="chat-form" autocomplete="off">
+    <input id="username" type="text" placeholder="Username" required>
+    <input id="avatar" type="url" placeholder="Avatar URL (optional)">
+    <input id="text" type="text" placeholder="Type a message..." required>
+    <button id="image-btn" type="button" class="secondary" title="Send an image">Image</button>
+    <button id="send" type="submit">Send</button>
+    <input id="image-file" type="file" accept="image/*" style="display:none">
+  </form>
+
+  <div id="context-menu" class="context-menu">
+    <button type="button" data-action="reply">Reply</button>
+    <button type="button" data-action="edit">Edit</button>
+    <button type="button" data-action="delete" class="danger">Delete</button>
+  </div>
+
+  <div id="admin-menu" class="context-menu">
+    <button type="button" data-action="remove-admin" class="danger">Remove admin</button>
+  </div>
+
+  <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
+    <img id="lightbox-img" alt="image preview">
+  </div>
+
+  <div id="create-room-panel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:#0b1220; padding:20px; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.2); z-index:11000;">
+    <h3 style="color:#e2e8f0;">Create Room</h3>
+    <form id="create-room-form">
+      <input type="text" id="create-room-name" placeholder="Room Name" required style="margin-bottom:10px; width:100%;">
+      <label style="display:block; margin-bottom:10px; color:#9ca3af;">
+        <input type="checkbox" id="room-private"> Private
+      </label>
+      <div style="font-size:11px;color:#9ca3af;margin:3px 0">Selected admins</div>
+      <div id="create-admins-selected" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px"></div>
+      <select id="room-admins" multiple style="margin-bottom:10px; width:100%;">
+        <!-- Options for users to be added as admins -->
+      </select>
+      <button type="submit" style="margin-right:10px;">Create Room</button>
+      <button type="button" onclick="closeRoomPanel()">Cancel</button>
+    </form>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="./client.js" defer></script>
+</body>
+</html>
