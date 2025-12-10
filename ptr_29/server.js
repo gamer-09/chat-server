@@ -291,6 +291,23 @@ function notifyNewMessage(room, fromUsername, preview) {
   }
 }
 
+// Debug/test endpoint to trigger notifyNewMessage without a client
+// (Safe for manual testing; remove or protect in production)
+app.get('/_debug/notify', (req, res) => {
+  const room = String(req.query.room || DEFAULT_ROOM).trim();
+  const from = (typeof req.query.from === 'string') ? req.query.from : 'Tester';
+  const preview = (typeof req.query.preview === 'string') ? req.query.preview : '';
+  try {
+    notifyNewMessage(room, from, preview);
+    return res.json({ ok: true, room, from, preview });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: 'notify_failed' });
+  }
+});
+
+// Export notifyNewMessage for test-time access
+try { module.exports = module.exports || {}; module.exports.notifyNewMessage = notifyNewMessage; } catch (e) {}
+
 // Admins prune endpoint (optional manual trigger)
 app.post('/api/admins/prune', (req, res) => {
   const body = req.body || {};
