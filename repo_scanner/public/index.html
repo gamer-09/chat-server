@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Repo Scanner</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Repo Scanner</div>
+    <div class="status"><span id="serverPort"></span></div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Authentication</h2>
+      <div class="row">
+        <input id="token" type="password" placeholder="x-auth-token" autocomplete="off">
+        <button id="saveToken">Save Token</button>
+        <button id="clearToken">Clear</button>
+      </div>
+      <div class="hint">Token is stored in your browser locally. Required to access the server UI/API.</div>
+    </section>
+
+    <section class="card">
+      <h2>GitHub Repositories</h2>
+      <div class="row">
+        <input id="owner" type="text" placeholder="Owner (user or org)">
+        <input id="ghToken" type="password" placeholder="GitHub token (optional: required for private repos)">
+      </div>
+      <div class="row">
+        <button id="btnListRepos">List Repos</button>
+        <label class="chk"><input type="checkbox" id="includePrivate"> <span class="name">Include Private</span></label>
+        <input id="repoFilter" type="search" placeholder="Filter repos by name">
+      </div>
+      <div class="row">
+        <textarea id="repoLinks" rows="3" style="flex:1 1 100%;min-width:240px;background:#0b1220;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:10px 12px;outline:none" placeholder="Paste GitHub links here (one per line). Examples:\nhttps://github.com/owner\nhttps://github.com/owner/repo"></textarea>
+      </div>
+      <div class="row">
+        <button id="btnUseLinks">Use Links</button>
+        <button id="btnStartFromLinks">Start Scan (From Links)</button>
+      </div>
+      <div class="row">
+        <button id="btnSelectAll">Select All</button>
+        <button id="btnSelectNone">Select None</button>
+      </div>
+      <div id="repoList" class="list"></div>
+    </section>
+
+    <section class="card">
+      <h2>Scan Controls</h2>
+      <div class="row">
+        <input id="includes" type="text" placeholder="Include patterns (comma separated substrings)">
+        <input id="excludes" type="text" placeholder="Exclude patterns (comma separated substrings)">
+        <input id="maxBytes" type="number" placeholder="Max bytes per file (default 1048576)">
+      </div>
+      <div class="row">
+        <button id="btnStartScan">Start Scan</button>
+        <button id="btnStartScanAll">Start Scan (All Repos)</button>
+        <button id="btnCancel" class="danger">Cancel</button>
+      </div>
+      <div class="row"><span id="scanStatus" style="font-weight:bold;color:#22c55e;"></span></div>
+      <div class="row">
+        <div class="progress" style="flex:1"><div id="scanBar" class="bar" style="width:0%"></div></div>
+        <div id="scanPercent" style="min-width:60px;text-align:right;">0%</div>
+      </div>
+      <div class="row" id="scanCounts">0 / 0 files</div>
+      <div class="row" style="justify-content:space-between;align-items:center;">
+        <div class="hint">Scanned files (live)</div>
+        <div>
+          <button id="btnClearScanned">Clear List</button>
+          <button id="btnDownloadFindings">Download Findings</button>
+        </div>
+      </div>
+      <div id="scannedList" class="list"></div>
+    </section>
+
+    <section class="card">
+      <h2>Findings</h2>
+      <div class="row">
+        <button id="btnCreateCleanPRs">Create Clean PRs (Suspicious binaries)</button>
+      </div>
+      <div id="findingsList" class="list"></div>
+    </section>
+
+    <section class="card">
+      <h2>Output</h2>
+      <pre id="output" class="output"></pre>
+    </section>
+
+    <section class="card">
+      <h2>Debug</h2>
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="debugToggle"> <span class="name">Enable Debug Logs</span></label>
+        <button id="btnClearDebug">Clear Debug</button>
+      </div>
+      <pre id="debugLog" class="output" style="min-height:120px"></pre>
+    </section>
+  </main>
+
+  <script src="debug.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
