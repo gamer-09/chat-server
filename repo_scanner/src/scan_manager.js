@@ -207,7 +207,7 @@ class RepoScanJob extends EventEmitter {
           if (total >= this.maxBytes) break;
         }
       } catch (e) {
-        this.emit('warn', { path: repoPath, error: String(e && e.message || e) });
+        this.emit('warn', { repo, path: repoPath, error: String(e && e.stack || e) });
         continue;
       } finally {
         try { entry.autodrain(); } catch {}
@@ -225,11 +225,11 @@ class RepoScanJob extends EventEmitter {
           }
         }
       } catch (e) {
-        this.emit('warn', { path: repoPath, error: String(e && e.message || e) });
+        this.emit('warn', { repo, path: repoPath, error: String(e && e.stack || e) });
       }
       }
     } catch (e) {
-      if (!this.cancelled) this.emit('warn', { repo, error: String(e && e.message || e) });
+      if (!this.cancelled) this.emit('warn', { repo, error: String(e && e.stack || e) });
     }
   }
 

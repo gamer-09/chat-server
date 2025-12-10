@@ -75,6 +75,12 @@ app.post('/scan/start', requireAuth, async (req, res) => {
       return res.status(400).json({ ok: false, error: 'owner and non-empty repos[] required' });
     }
     const job = scanManager.create({ owner, repos, ghToken, maxBytesPerFile, includePatterns, excludePatterns });
+    // Log job events to server console for debugging
+    ['start','repo','count','file','finding','progress','warn','error','end'].forEach(ev => {
+      job.on(ev, (data) => {
+        try { console.log(`JOB ${job.id} ${ev}:`, typeof data === 'string' ? data : JSON.stringify(data)); } catch (e) { console.log(`JOB ${job.id} ${ev}:`, data); }
+      });
+    });
     res.json({ ok: true, jobId: job.id });
   } catch (e) {
     res.status(500).json({ ok: false, error: String(e && e.message || e) });

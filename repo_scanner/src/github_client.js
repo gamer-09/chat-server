@@ -137,16 +137,30 @@ class GithubClient {
   async fetchArchiveZip({ owner, repo, ref, signal }) {
     const url = `${BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/zipball/${ref || ''}`;
     // Do NOT auto-follow redirects so we can preserve Authorization across origins
-    let res = await fetch(url, { headers: this.headers, redirect: 'manual', signal });
+    let res;
+    try {
+      res = await fetch(url, { headers: this.headers, redirect: 'manual', signal });
+    } catch (e) {
+      throw new Error(`GitHub zipball fetch failed for ${url}: ${String(e && e.message || e)}`);
+    }
     // Handle redirect to codeload (or other host) manually with Authorization header
     if (res.status >= 300 && res.status < 400) {
       const loc = res.headers.get('location');
       if (!loc) throw new Error(`GitHub zipball redirect without location (${res.status})`);
-      res = await fetch(loc, { headers: this.headers, signal });
+      // Try to fetch the redirected location
+      try {
+        const redirected = await fetch(loc, { headers: this.headers, signal });
+        res = redirected;
+      } catch (e) {
+        throw new Error(`GitHub zipball redirected to ${loc} but follow fetch failed: ${String(e && e.message || e)}`);
+      }
     }
     if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`GitHub zipball -> ${res.status}: ${text}`);
+      const ct = res.headers.get('content-type') || '';
+      let text = '';
+      try { text = await res.text(); } catch (e) { text = String(e && e.message || e); }
+      const snippet = String(text || '').slice(0, 1024);
+      throw new Error(`GitHub zipball -> ${res.status} (${ct}): ${snippet}`);
     }
     return res.body; // Node stream
   }
