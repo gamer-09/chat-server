@@ -231,20 +231,82 @@ let broadcastRooms = () => {
   });
 };
 
-// Notify all eligible clients about a new message in a room
+/**
+ * Notify all eligible clients about a new message in a room
+ * @param {string} room - The room identifier
+ * @param {string} fromUsername - Username of the message sender
+ * @param {string} [preview] - Optional message preview text
+ */
 function notifyNewMessage(room, fromUsername, preview) {
-  const r = String(room || '').trim();
-  const from = (fromUsername || 'Someone');
-  const snippet = (typeof preview === 'string' && preview.trim()) ? preview.trim().slice(0, 60) : '';
-  io.sockets.sockets.forEach((s) => {
-    const cid = s.data && s.data.clientId;
-    // Only notify users who can access the room and are NOT currently viewing it
-    if (!canAccessRoom(r, cid)) return;
-    if (s.data && s.data.currentRoom === r) return;
-    const text = `🔔 New in #${r} from ${from}${snippet ? `: ${snippet}` : ''}`;
-    s.emit('system', { type: 'notify', message: text });
-  });
+  // Input validation
+  if (!room || typeof room !== 'string') {
+    console.warn('notifyNewMessage: Invalid room parameter');
+    return;
+  }
+  
+  const r = room.trim();
+  if (!r) {
+    console.warn('notifyNewMessage: Empty room name after trimming');
+    return;
+  }
+
+  const from = (typeof fromUsername === 'string' && fromUsername.trim()) || 'Someone';
+  const snippet = (typeof preview === 'string' && preview.trim()) 
+    ? preview.trim().slice(0, 60) 
+    : '';
+
+  try {
+    if (!io?.sockets?.sockets) {
+      throw new Error('Socket.io instance not properly initialized');
+    }
+
+    // Get sockets as an array to avoid potential issues with forEach on Socket map
+    const sockets = Array.from(io.sockets.sockets.values());
+    
+    // Process notifications
+    for (const socket of sockets) {
+      try {
+        const cid = socket.data?.clientId;
+        
+        // Skip if client can't access the room or is currently in the room
+        if (!canAccessRoom(r, cid) || socket.data?.currentRoom === r) {
+          continue;
+        }
+
+        const notificationText = `🔔 New in #${r} from ${from}${snippet ? `: ${snippet}` : ''}`;
+        socket.emit('system', { 
+          type: 'notify', 
+          message: notificationText,
+          room: r,
+          from,
+          timestamp: new Date().toISOString()
+        });
+      } catch (socketError) {
+        console.error('Error notifying socket:', socketError);
+        // Continue with other sockets if one fails
+      }
+    }
+  } catch (error) {
+    console.error('Error in notifyNewMessage:', error);
+  }
 }
+
+// Debug/test endpoint to trigger notifyNewMessage without a client
+// (Safe for manual testing; remove or protect in production)
+app.get('/_debug/notify', (req, res) => {
+  const room = String(req.query.room || DEFAULT_ROOM).trim();
+  const from = (typeof req.query.from === 'string') ? req.query.from : 'Tester';
+  const preview = (typeof req.query.preview === 'string') ? req.query.preview : '';
+  try {
+    notifyNewMessage(room, from, preview);
+    return res.json({ ok: true, room, from, preview });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: 'notify_failed' });
+  }
+});
+
+// Export notifyNewMessage for test-time access
+try { module.exports = module.exports || {}; module.exports.notifyNewMessage = notifyNewMessage; } catch (e) {}
 
 // Admins prune endpoint (optional manual trigger)
 app.post('/api/admins/prune', (req, res) => {
