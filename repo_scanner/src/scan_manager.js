@@ -132,7 +132,8 @@ class RepoScanJob extends EventEmitter {
             if (!p) return false;
             if (pathExcluded(p, this.excludes)) return false;
             if (this.includes.length && !this.includes.some(s => p.includes(s))) return false;
-            if (!isTextPath(p)) return false;
+            // Count all files that will be processed (both text and non-text)
+            // Non-text files will be counted but skipped for content analysis
             return true;
           });
           total += filtered.length;
@@ -142,6 +143,19 @@ class RepoScanJob extends EventEmitter {
       }
       this.total = total;
       this.emit('count', { total: this.total });
+      
+      // Debug logging for filtering visibility
+      if (this.total === 0) {
+        this.emit('warn', { 
+          error: 'Archive fetch succeeded but no files passed filters. Check include/exclude patterns and file extensions.',
+          details: {
+            repos: this.repos,
+            includes: this.includes,
+            excludes: this.excludes,
+            textExtensions: Array.from(TEXT_EXTS)
+          }
+        });
+      }
 
       // Scan
       for (const repo of this.repos) {
@@ -175,6 +189,10 @@ class RepoScanJob extends EventEmitter {
   async _scanZipStream(repo, stream) {
     const directory = unzipper.Parse();
     const pipeline = stream.pipe(directory);
+    let processedCount = 0;
+    let skippedTextCount = 0;
+    let skippedBinaryCount = 0;
+    
     try {
       for await (const entry of pipeline) {
         if (this.cancelled) { try { entry.autodrain(); } catch {} break; }
@@ -183,8 +201,8 @@ class RepoScanJob extends EventEmitter {
       const relPath = fullPath.replace(/\\/g, '/');
       if (!relPath) { entry.autodrain(); continue; }
       const repoPath = `${repo}/${relPath}`;
-      if (pathExcluded(repoPath, this.excludes)) { entry.autodrain(); continue; }
-      if (this.includes.length && !this.includes.some(s => repoPath.includes(s))) { entry.autodrain(); continue; }
+      if (pathExcluded(repoPath, this.excludes)) { entry.autodrain(); skippedBinaryCount++; continue; }
+      if (this.includes.length && !this.includes.some(s => repoPath.includes(s))) { entry.autodrain(); skippedBinaryCount++; continue; }
       if (!isTextPath(repoPath)) {
         const ext = toLowerExt(repoPath);
         if (SUSPICIOUS_BINARY_EXTS.has(ext)) {
@@ -194,6 +212,7 @@ class RepoScanJob extends EventEmitter {
         }
         entry.autodrain();
         this._bump(repoPath);
+        skippedBinaryCount++;
         continue;
       }
 
@@ -215,6 +234,7 @@ class RepoScanJob extends EventEmitter {
 
       const buf = Buffer.concat(chunks, Math.min(total, this.maxBytes));
       this._bump(repoPath);
+      processedCount++;
 
       try {
         const findings = detectFindings(relPath, buf);
@@ -227,6 +247,17 @@ class RepoScanJob extends EventEmitter {
       } catch (e) {
         this.emit('warn', { repo, path: repoPath, error: String(e && e.stack || e) });
       }
+      }
+      
+      // Debug summary for this repo
+      if (processedCount > 0 || skippedBinaryCount > 0 || skippedTextCount > 0) {
+        this.emit('warn', { 
+          repo, 
+          message: 'File processing summary',
+          processed: processedCount,
+          skippedBinary: skippedBinaryCount,
+          skippedText: skippedTextCount
+        });
       }
     } catch (e) {
       if (!this.cancelled) this.emit('warn', { repo, error: String(e && e.stack || e) });
