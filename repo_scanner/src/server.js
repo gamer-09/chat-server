@@ -79,7 +79,7 @@ app.post('/scan/start', requireAuth, async (req, res) => {
     const { createLogger, redactFinding } = require('./logger');
     const jobLogger = createLogger('repo_scan_job');
     const handlers = {};
-    ['start','repo','count','file','finding','progress','warn','error','end'].forEach((ev) => {
+    ['start','repo','count','file','finding','progress','warn','error','end','empty_repo'].forEach((ev) => {
       handlers[ev] = (data) => {
         try {
           if (ev === 'finding') {
@@ -138,6 +138,7 @@ app.get('/scan/jobs/:id/stream', requireAuth, (req, res) => {
   const onProgress = (ev) => send('progress', ev);
   const onWarn = (ev) => send('warn', ev);
   const onError = (ev) => send('error', ev);
+  const onEmptyRepo = (ev) => send('empty_repo', ev);
   const onEnd = (ev) => { send('end', ev); cleanup(); try { res.end(); } catch {} };
 
   const cleanup = () => {
@@ -149,6 +150,7 @@ app.get('/scan/jobs/:id/stream', requireAuth, (req, res) => {
     job.off('progress', onProgress);
     job.off('warn', onWarn);
     job.off('error', onError);
+    job.off('empty_repo', onEmptyRepo);
     job.off('end', onEnd);
     clearInterval(keepAlive);
   };
@@ -161,6 +163,7 @@ app.get('/scan/jobs/:id/stream', requireAuth, (req, res) => {
   job.on('progress', onProgress);
   job.on('warn', onWarn);
   job.on('error', onError);
+  job.on('empty_repo', onEmptyRepo);
   job.on('end', onEnd);
 
   const keepAlive = setInterval(() => { send('ping', { t: Date.now() }); }, 15000);

@@ -26,6 +26,19 @@
   let preSelectedRepoNames = [];
   let isScanning = false;
 
+  function stopLive(cancel = false) {
+    if (currentES) {
+      try { currentES.close(); } catch {}
+      currentES = null;
+    }
+    currentJobId = null;
+    setScanUi(false);
+    if (cancel) {
+      setOutput('Scan cancelled');
+      if (scanStatus) scanStatus.textContent = 'Scan cancelled';
+    }
+  }
+
   function setScanUi(running) {
     isScanning = !!running;
     try {
@@ -39,9 +52,17 @@
     } catch {}
   }
 
-  function setOutput(data) {
-    try { out.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2); }
-    catch { out.textContent = String(data); }
+  function setOutput(data, append = false) {
+    try {
+      const message = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+      if (append && out.textContent) {
+        out.textContent = out.textContent + '\n' + message;
+      } else {
+        out.textContent = message;
+      }
+      // Auto-scroll to bottom
+      out.scrollTop = out.scrollHeight;
+    } catch { out.textContent = String(data); }
   }
 
   function getToken() { return localStorage.getItem('x-auth-token') || ''; }
@@ -260,9 +281,10 @@
       currentES.addEventListener('file', (e) => { try { const d = JSON.parse(e.data); if (d.path) appendScanned(d.path); } catch {} });
       currentES.addEventListener('finding', (e) => { try { const d = JSON.parse(e.data); appendFinding(d); } catch {} });
       currentES.addEventListener('progress', (e) => { try { const d = JSON.parse(e.data); updateProgress(d.scanned || 0, d.total || 0); } catch {} });
-      currentES.addEventListener('warn', (e) => { try { const d = JSON.parse(e.data); setOutput(`Warn: ${d.repo || d.path || ''} -> ${d.error || ''}`); } catch {} });
-      currentES.addEventListener('error', (e) => { try { const d = JSON.parse(e.data); setOutput(`Error: ${d.error || ''}`); } catch { setOutput('Stream error'); } });
-      currentES.addEventListener('end', (e) => { try { const d = JSON.parse(e.data); setOutput(`Scan finished: ${d.scanned}/${d.total} files${d.cancelled ? ' (cancelled)' : ''}`); if (scanStatus) scanStatus.textContent = 'Scan complete'; } catch { setOutput('Scan finished'); if (scanStatus) scanStatus.textContent = 'Scan complete'; } stopLive(false); });
+      currentES.addEventListener('warn', (e) => { try { const d = JSON.parse(e.data); setOutput(`Warn: ${d.repo || d.path || ''} -> ${d.error || ''}`, true); } catch {} });
+      currentES.addEventListener('empty_repo', (e) => { try { const d = JSON.parse(e.data); setOutput(`Empty Repository: ${d.repo} - ${d.error || 'No files to scan'}`, true); } catch {} });
+      currentES.addEventListener('error', (e) => { try { const d = JSON.parse(e.data); setOutput(`Error: ${d.error || ''}`, true); } catch { setOutput('Stream error', true); } });
+      currentES.addEventListener('end', (e) => { try { const d = JSON.parse(e.data); setOutput(`Scan finished: ${d.scanned}/${d.total} files${d.cancelled ? ' (cancelled)' : ''}`, true); if (scanStatus) scanStatus.textContent = 'Scan complete'; } catch { setOutput('Scan finished', true); if (scanStatus) scanStatus.textContent = 'Scan complete'; } stopLive(false); });
     } catch (e) { setOutput(String(e.message || e)); }
   }
 
@@ -288,9 +310,10 @@
       currentES.addEventListener('file', (e) => { try { const d = JSON.parse(e.data); if (d.path) appendScanned(d.path); } catch {} });
       currentES.addEventListener('finding', (e) => { try { const d = JSON.parse(e.data); appendFinding(d); } catch {} });
       currentES.addEventListener('progress', (e) => { try { const d = JSON.parse(e.data); updateProgress(d.scanned || 0, d.total || 0); } catch {} });
-      currentES.addEventListener('warn', (e) => { try { const d = JSON.parse(e.data); setOutput(`Warn: ${d.repo || d.path || ''} -> ${d.error || ''}`); } catch {} });
-      currentES.addEventListener('error', (e) => { try { const d = JSON.parse(e.data); setOutput(`Error: ${d.error || ''}`); } catch { setOutput('Stream error'); } });
-      currentES.addEventListener('end', (e) => { try { const d = JSON.parse(e.data); setOutput(`Scan finished: ${d.scanned}/${d.total} files${d.cancelled ? ' (cancelled)' : ''}`); if (scanStatus) scanStatus.textContent = 'Scan complete'; } catch { setOutput('Scan finished'); if (scanStatus) scanStatus.textContent = 'Scan complete'; } stopLive(false); });
+      currentES.addEventListener('warn', (e) => { try { const d = JSON.parse(e.data); setOutput(`Warn: ${d.repo || d.path || ''} -> ${d.error || ''}`, true); } catch {} });
+      currentES.addEventListener('empty_repo', (e) => { try { const d = JSON.parse(e.data); setOutput(`Empty Repository: ${d.repo} - ${d.error || 'No files to scan'}`, true); } catch {} });
+      currentES.addEventListener('error', (e) => { try { const d = JSON.parse(e.data); setOutput(`Error: ${d.error || ''}`, true); } catch { setOutput('Stream error', true); } });
+      currentES.addEventListener('end', (e) => { try { const d = JSON.parse(e.data); setOutput(`Scan finished: ${d.scanned}/${d.total} files${d.cancelled ? ' (cancelled)' : ''}`, true); if (scanStatus) scanStatus.textContent = 'Scan complete'; } catch { setOutput('Scan finished', true); if (scanStatus) scanStatus.textContent = 'Scan complete'; } stopLive(false); });
     } catch (e) { setOutput(String(e.message || e)); }
   }
 
@@ -319,9 +342,10 @@
       currentES.addEventListener('file', (e) => { try { const d = JSON.parse(e.data); if (d.path) appendScanned(d.path); } catch {} });
       currentES.addEventListener('finding', (e) => { try { const d = JSON.parse(e.data); appendFinding(d); } catch {} });
       currentES.addEventListener('progress', (e) => { try { const d = JSON.parse(e.data); updateProgress(d.scanned || 0, d.total || 0); } catch {} });
-      currentES.addEventListener('warn', (e) => { try { const d = JSON.parse(e.data); setOutput(`Warn: ${d.repo || d.path || ''} -> ${d.error || ''}`); } catch {} });
-      currentES.addEventListener('error', (e) => { try { const d = JSON.parse(e.data); setOutput(`Error: ${d.error || ''}`); } catch { setOutput('Stream error'); } });
-      currentES.addEventListener('end', (e) => { try { const d = JSON.parse(e.data); setOutput(`Scan finished: ${d.scanned}/${d.total} files${d.cancelled ? ' (cancelled)' : ''}`); if (scanStatus) scanStatus.textContent = 'Scan complete'; } catch { setOutput('Scan finished'); if (scanStatus) scanStatus.textContent = 'Scan complete'; } stopLive(false); });
+      currentES.addEventListener('warn', (e) => { try { const d = JSON.parse(e.data); setOutput(`Warn: ${d.repo || d.path || ''} -> ${d.error || ''}`, true); } catch {} });
+      currentES.addEventListener('empty_repo', (e) => { try { const d = JSON.parse(e.data); setOutput(`Empty Repository: ${d.repo} - ${d.error || 'No files to scan'}`, true); } catch {} });
+      currentES.addEventListener('error', (e) => { try { const d = JSON.parse(e.data); setOutput(`Error: ${d.error || ''}`, true); } catch { setOutput('Stream error', true); } });
+      currentES.addEventListener('end', (e) => { try { const d = JSON.parse(e.data); setOutput(`Scan finished: ${d.scanned}/${d.total} files${d.cancelled ? ' (cancelled)' : ''}`, true); if (scanStatus) scanStatus.textContent = 'Scan complete'; } catch { setOutput('Scan finished', true); if (scanStatus) scanStatus.textContent = 'Scan complete'; } stopLive(false); });
     } catch (e) { setOutput(String(e.message || e)); }
   }
 

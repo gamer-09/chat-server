@@ -138,7 +138,12 @@ class RepoScanJob extends EventEmitter {
           });
           total += filtered.length;
         } catch (e) {
-          this.emit('warn', { repo, error: String(e && e.message || e) });
+          // Check for empty repository error
+          if (e && e.message && e.message.includes('Git Repository is empty')) {
+            this.emit('empty_repo', { repo, error: 'Repository is empty - no files to scan' });
+          } else {
+            this.emit('warn', { repo, error: String(e && e.message || e) });
+          }
         }
       }
       this.total = total;
@@ -166,7 +171,12 @@ class RepoScanJob extends EventEmitter {
           this.currentAbort = new AbortController();
           stream = await gh.fetchArchiveZip({ owner: this.owner, repo, ref: '', signal: this.currentAbort.signal });
         } catch (e) {
-          this.emit('warn', { repo, error: String(e && e.message || e) });
+          // Check for empty repository error
+          if (e && e.message && e.message.includes('Git Repository is empty')) {
+            this.emit('empty_repo', { repo, error: 'Repository is empty - no files to scan' });
+          } else {
+            this.emit('warn', { repo, error: String(e && e.message || e) });
+          }
           if (this.cancelled) break;
           continue;
         } finally {
