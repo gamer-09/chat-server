@@ -206,15 +206,35 @@ class RepoScanJob extends EventEmitter {
     try {
       for await (const entry of pipeline) {
         if (this.cancelled) { try { entry.autodrain(); } catch {} break; }
-      if (entry.type !== 'File') { entry.autodrain(); continue; }
+      if (entry.type !== 'File') { 
+        this.emit('warn', { repo, message: `Skipping non-file entry: ${entry.path || 'unknown'}` });
+        entry.autodrain(); 
+        continue; 
+      }
       let fullPath = stripZipTop(entry.path || '');
       const relPath = fullPath.replace(/\\/g, '/');
-      if (!relPath) { entry.autodrain(); continue; }
+      if (!relPath) { 
+        this.emit('warn', { repo, message: `Skipping empty path entry` });
+        entry.autodrain(); 
+        continue; 
+      }
       const repoPath = `${repo}/${relPath}`;
-      if (pathExcluded(repoPath, this.excludes)) { entry.autodrain(); skippedBinaryCount++; continue; }
-      if (this.includes.length && !this.includes.some(s => repoPath.includes(s))) { entry.autodrain(); skippedBinaryCount++; continue; }
+      this.emit('warn', { repo, message: `Processing file: ${repoPath}` });
+      if (pathExcluded(repoPath, this.excludes)) { 
+        this.emit('warn', { repo, path: repoPath, message: `Skipping excluded file: ${repoPath}` });
+        entry.autodrain(); 
+        skippedBinaryCount++; 
+        continue; 
+      }
+      if (this.includes.length && !this.includes.some(s => repoPath.includes(s))) { 
+        this.emit('warn', { repo, path: repoPath, message: `Skipping file not in includes: ${repoPath}` });
+        entry.autodrain(); 
+        skippedBinaryCount++; 
+        continue; 
+      }
       if (!isTextPath(repoPath)) {
         const ext = toLowerExt(repoPath);
+        this.emit('warn', { repo, path: repoPath, message: `Skipping non-text file: ${repoPath}, extension: ${ext}` });
         if (SUSPICIOUS_BINARY_EXTS.has(ext)) {
           const f = { rule: 'suspicious_binary', path: relPath, match: ext, snippet: '' };
           this.findings.push({ ...f, repo });
@@ -248,6 +268,7 @@ class RepoScanJob extends EventEmitter {
 
       try {
         const findings = detectFindings(relPath, buf);
+        this.emit('warn', { repo, path: repoPath, message: `Scanned file: ${relPath}, size: ${buf.length} bytes, findings: ${findings.length}` });
         if (findings && findings.length) {
           for (const f of findings) {
             this.findings.push({ ...f, repo });
