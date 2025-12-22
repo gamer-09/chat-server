@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>hhu_87 API Gateway Console</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div>
+        <h1>hhu_87 API Gateway</h1>
+        <p class="subtitle">Interactive console to route requests through your gateway.</p>
+      </div>
+      <div class="header-actions">
+        <button id="helpBtn" class="secondary-button" type="button">Help</button>
+      </div>
+    </header>
+
+    <section class="panel">
+      <h2>Gateway Status</h2>
+      <div id="status" class="status">Loading gateway info...</div>
+    </section>
+
+    <section class="panel">
+      <h2>Authentication</h2>
+      <div class="field-row">
+        <label for="apiKeyInput">API Key</label>
+        <input type="password" id="apiKeyInput" placeholder="Enter API key">
+      </div>
+      <div class="actions">
+        <button id="saveKeyBtn">Save key locally</button>
+        <span id="keySavedMsg" class="hint"></span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Request Builder</h2>
+      <div class="grid">
+        <div class="field">
+          <label for="serviceSelect">Service</label>
+          <select id="serviceSelect">
+            <option value="">-- select service --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="methodSelect">Method</label>
+          <select id="methodSelect">
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="DELETE">DELETE</option>
+            <option value="PATCH">PATCH</option>
+          </select>
+        </div>
+        <div class="field field-full">
+          <label for="pathInput">Path</label>
+          <input id="pathInput" type="text" placeholder="/example">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="bodyInput">Request body (JSON, optional)</label>
+        <textarea id="bodyInput" rows="6" placeholder='{"example": true}'></textarea>
+      </div>
+
+      <div class="actions">
+        <button id="sendBtn">Send request</button>
+        <span id="requestMeta" class="hint"></span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Response</h2>
+      <pre id="responseOutput" class="code-block"></pre>
+    </section>
+  </div>
+
+  <div id="helpOverlay" class="help-overlay">
+    <div class="help-dialog">
+      <div class="help-header">
+        <h2>How to use the hhu_87 API Gateway</h2>
+        <button id="closeHelpBtn" class="secondary-button" type="button">Close</button>
+      </div>
+      <div class="help-content">
+        <h3>1. What this gateway does</h3>
+        <p>
+          This server is an API Gateway. It receives requests and forwards them to other services
+          ("downstream" servers). It also handles authentication and logs every request.
+        </p>
+
+        <h3>2. Environment variables</h3>
+        <ul>
+          <li><code>PORT</code> – HTTP port for the gateway (default: <code>4008</code>).</li>
+          <li><code>API_KEY</code> – secret key required for all protected requests.</li>
+          <li>
+            <code>SERVICE_&lt;NAME&gt;_URL</code> – URL of a downstream service.
+            Example: <code>SERVICE_USERS_URL=http://localhost:5001</code> is used when you call
+            <code>/api/users/...</code> through the gateway.
+          </li>
+        </ul>
+
+        <h3>3. Gateway endpoints</h3>
+        <ul>
+          <li><code>GET /</code> – JSON status and list of configured services.</li>
+          <li><code>GET /healthz</code> – health check (no auth).</li>
+          <li>
+            <code>/api/:serviceName/*</code> – proxied routes.
+            For example, <code>/api/users/profile</code> goes to the
+            <code>SERVICE_USERS_URL</code> service at <code>/profile</code>.
+          </li>
+        </ul>
+
+        <h3>4. Authentication</h3>
+        <p>
+          All <code>/api/...</code> routes require your <code>API_KEY</code>. Send it as either:
+        </p>
+        <ul>
+          <li><code>Authorization: Bearer &lt;API_KEY&gt;</code></li>
+          <li><code>X-API-Key: &lt;API_KEY&gt;</code></li>
+        </ul>
+        <p>
+          The <code>/</code>, <code>/healthz</code>, and <code>/ui</code> routes are public and do not
+          require authentication.
+        </p>
+
+        <h3>5. Using this UI</h3>
+        <ol>
+          <li>
+            In <strong>Authentication</strong>, paste your <code>API_KEY</code> and click
+            "Save key locally". The key is stored in your browser only (localStorage).
+          </li>
+          <li>
+            In <strong>Request Builder</strong>:
+            <ul>
+              <li>Select a <strong>Service</strong> (e.g. <code>users</code>).</li>
+              <li>Choose an HTTP <strong>Method</strong> (GET, POST, etc.).</li>
+              <li>Set the <strong>Path</strong> (e.g. <code>/profile</code>).</li>
+              <li>
+                Optionally provide a JSON <strong>Request body</strong> for methods like POST or PUT.
+              </li>
+            </ul>
+          </li>
+          <li>
+            Click <strong>Send request</strong>.
+            The gateway sends <code>/api/&lt;service&gt;/&lt;path&gt;</code> with your API key and shows
+            the response below.
+          </li>
+        </ol>
+
+        <h3>6. Example setup</h3>
+        <pre class="code-block">
+PORT=4008
+API_KEY=your-secret-key
+SERVICE_USERS_URL=http://localhost:5001
+SERVICE_ORDERS_URL=http://localhost:5002
+        </pre>
+        <p>
+          With this configuration you can, for example, request
+          <code>/api/users/profile</code> through the gateway and it will be forwarded to
+          <code>http://localhost:5001/profile</code>.
+        </p>
+        <h3>7. Extra gateway features</h3>
+        <ul>
+          <li>
+            <strong>CORS for browsers</strong> – controlled by <code>CORS_ORIGIN</code>. Use
+            <code>*</code> to allow any origin, or set it to a specific frontend URL.
+          </li>
+          <li>
+            <strong>Request IDs</strong> – you can send <code>X-Request-Id</code> on any request.
+            If you omit it, the gateway generates an ID. The ID is returned in the
+            <code>X-Request-Id</code> response header and appears in logs.
+          </li>
+          <li>
+            <strong>Standard error responses</strong> – 401 for bad API key, 502 if a service
+            is missing or fails, 404 when a route is not found, and 500 for unexpected errors.
+            All error responses include a <code>requestId</code> field so you can match them to logs.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="ui.js"></script>
+</body>
+</html>

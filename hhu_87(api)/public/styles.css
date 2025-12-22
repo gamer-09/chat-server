@@ -1,0 +1,247 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: radial-gradient(circle at top left, #1f2933, #111827);
+  color: #e5e7eb;
+}
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 24px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header h1 {
+  margin: 0 0 4px 0;
+  font-size: 1.7rem;
+}
+
+.subtitle {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.95rem;
+}
+
+.panel {
+  background: rgba(17, 24, 39, 0.96);
+  border-radius: 12px;
+  padding: 16px 16px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(55, 65, 81, 0.9);
+}
+
+.panel h2 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+}
+
+.status {
+  padding: 8px 10px;
+  background: rgba(31, 41, 55, 0.9);
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.field-row,
+.field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+
+label {
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+  color: #d1d5db;
+}
+
+input[type="text"],
+input[type="password"],
+select,
+textarea {
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 8px;
+  border: 1px solid #374151;
+  padding: 7px 10px;
+  color: #e5e7eb;
+  font-size: 0.95rem;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.6);
+}
+
+textarea {
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+button {
+  border: none;
+  border-radius: 999px;
+  padding: 7px 16px;
+  background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.45);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
+}
+
+button:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 8px 26px rgba(6, 182, 212, 0.6);
+}
+
+button:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.5);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+  box-shadow: none;
+}
+
+.secondary-button {
+  background: rgba(17, 24, 39, 0.95);
+  border: 1px solid #4b5563;
+  box-shadow: none;
+}
+
+.secondary-button:hover {
+  filter: none;
+  border-color: #6b7280;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.9);
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 16px;
+  margin-bottom: 8px;
+}
+
+.field-full {
+  grid-column: 1 / -1;
+}
+
+.code-block {
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 8px;
+  border: 1px solid #374151;
+  padding: 10px 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.help-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease-in-out;
+  z-index: 40;
+}
+
+.help-overlay.help-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.help-dialog {
+  max-width: 720px;
+  max-height: 90vh;
+  width: 100%;
+  background: #020617;
+  border-radius: 14px;
+  border: 1px solid #4b5563;
+  box-shadow: 0 22px 80px rgba(0, 0, 0, 0.8);
+  padding: 16px 18px 18px;
+  overflow-y: auto;
+}
+
+.help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.help-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.help-content h3 {
+  margin: 12px 0 4px;
+  font-size: 0.98rem;
+}
+
+.help-content p,
+.help-content ul,
+.help-content ol {
+  font-size: 0.9rem;
+  color: #d1d5db;
+}
+
+.help-content ul,
+.help-content ol {
+  padding-left: 20px;
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 16px 10px 28px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
