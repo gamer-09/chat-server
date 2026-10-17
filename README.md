@@ -1,4 +1,9 @@
 # chat-server
+
+![Archived](https://img.shields.io/badge/status-archived-red)
+
+> **This repository has been archived and is now read-only.**
+
 Real-time chat server
 
 this is an old version of the chat site and is being updated again 
