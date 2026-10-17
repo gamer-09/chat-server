@@ -1,6 +1,7 @@
 # chat-server
 Real-time chat server
 
+this is an old version of the chat site and is being updated again 
 ## Setup
 1. Clone the repository
 2. Navigate to the `ptr_29` directory
