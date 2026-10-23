@@ -8,9 +8,9 @@ Real-time chat server.
 
 > **This project is no longer maintained.** This is an old version of the chat site and **no further updates or fixes will be posted here.** Development moved to the new chat site below.
 
-## ⚠️ The chat site in `ptr_29/` is 231 commits behind
+## ⚠️ The chat site in `ptr_29/` is far behind
 
-The chat app in this repository is in [`ptr_29/`](ptr_29). It is the **original prototype** and is now **231 commits behind** the actively developed chat site, which is where the project continued:
+The chat app in this repository is in [`ptr_29/`](ptr_29). It is the **original prototype** and is now **231 commits behind + 21 additional commits ahead of the reference point** the actively developed chat site, which is where the project continued:
 
 - **New source —** https://github.com/gamer-09/chat-site
 - **Live site —** https://gamer-09.github.io/chat-site/
@@ -30,15 +30,18 @@ The chat app in this repository is in [`ptr_29/`](ptr_29). It is the **original 
 | **Hosted file sharing** | Allow-listed images up to 5 MB and documents (PDF, TXT, CSV, JSON, DOCX, XLSX, PPTX) up to 10 MB, backed by Supabase Storage. |
 | **Glass UI** | Frosted panels over a **live animated canvas backdrop**, with a Still/Animate switch and dark/light glass palettes. |
 | **Themes** | 🌙/☀️ dark-light toggle remembered per browser; links and read receipts re-tint per theme. |
+| **Seasonal themes** | 🎃 **Halloween** (October) and 🎄 **Christmas** (December) — date-gated 3D live-motion backdrops, header toggles, seasonal palettes for both themes, and one-time-per-year seasonal popups. |
 | **People panel & profiles** | Online/Offline toggle with live counts, search filter, last-seen times, and member profile cards with activity stats. |
 | **Client-ID requests** | Consent-based inbox: reasoned request → approve/deny, then revoke sharing later. |
 | **Safe links** | Allow-list validation that blocks unsafe protocols, private/local targets, credential-obfuscated and punycode look-alike links, risky downloads and link spam. |
+| **Bug reporting** | In-site bug reporter with required fields (category, summary, expected vs actual, steps to reproduce, severity), cooldown, Supabase-backed submission + GitHub issue mirroring, and graceful fallback to GitHub. |
+| **Update checker** | Tab-aware update notice (polls `version.json`) with "Refresh now"/"Not now", independent of silent build freshness reloads. |
 | **PWA & offline** | Service worker, web manifest, icons, network-first shell. |
 | **Guided tour & help** | One-time guided tour for new accounts plus a 9-slide built-in help guide and Contact-the-operator modal. |
 | **Mobile layout** | Dedicated mobile sidebar and adaptive keyboard handling. |
 | **Deploy tooling** | Dockerfile, Procfile, GitHub Pages workflow, and a build-freshness guard. |
 
-_Commit count and feature list reflect the new chat site as of commit [`6441862`](https://github.com/gamer-09/chat-site/commit/6441862)._
+_Active development continues on the new chat site. As of commit [`88a594c`](https://github.com/gamer-09/chat-site/commit/88a594c) the new repo has evolved well beyond the earlier reference point with seasonal themes, improved bug reporting, and ongoing UX refinements._
 
 ## Setup
 
